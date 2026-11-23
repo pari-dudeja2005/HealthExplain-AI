@@ -13,7 +13,8 @@
 
 It combines disease-specific classification pipelines, SHAP and LIME explanations, reliability experiments, and an interactive **four-page Streamlit dashboard**.
 
-**Repository:** [HealthExplain-AI](https://github.com/pari-dudeja2005/HealthExplain-AI)
+**Repository:** [HealthExplain-AI](https://github.com/pari-dudeja2005/HealthExplain-AI) 
+**Streamlit:** https://healthexplain-ai.streamlit.app/
 
 > **Important:** This is a research and educational prototype. Predictions and explanations are not clinically validated and must not be used for diagnosis, treatment, or medical decisions.
 
