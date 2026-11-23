@@ -1,4 +1,3 @@
-
 # 🩺 HealthExplain-AI
 
 ### Explainable Multi-Disease Risk Prediction with Machine Learning, SHAP & LIME
@@ -6,31 +5,34 @@
 [![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-Machine%20Learning-F7931E?logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
+[![XGBoost](https://img.shields.io/badge/ML-XGBoost-EC6B23)](https://xgboost.readthedocs.io/)
 [![SHAP](https://img.shields.io/badge/XAI-SHAP-1565C0)](https://shap.readthedocs.io/)
 [![LIME](https://img.shields.io/badge/XAI-LIME-00897B)](https://github.com/marcotcr/lime)
 
-**HealthExplain-AI** is an end-to-end machine learning and explainable AI (XAI) project that estimates risk across **five disease datasets** and helps users understand which input features influence individual predictions.
+**HealthExplain-AI** is an end-to-end machine learning and explainable AI (XAI) project designed to predict outcomes across **five disease datasets** and explain how individual input features influence model predictions.
 
-It combines disease-specific classification pipelines, SHAP and LIME explanations, reliability experiments, and an interactive **four-page Streamlit dashboard**.
+The project combines disease-specific machine learning pipelines, model evaluation, recall-focused improvements, SHAP and LIME explanations, and XAI reliability analysis through an interactive **four-page Streamlit dashboard**.
 
-**Repository:** [HealthExplain-AI](https://github.com/pari-dudeja2005/HealthExplain-AI) 
-**Streamlit:** https://healthexplain-ai.streamlit.app/
+**GitHub Repository:** [HealthExplain-AI](https://github.com/pari-dudeja2005/HealthExplain-AI)
 
-> **Important:** This is a research and educational prototype. Predictions and explanations are not clinically validated and must not be used for diagnosis, treatment, or medical decisions.
+**Streamlit Application:** https://healthexplain-ai.streamlit.app/
+
+**Important:** HealthExplain-AI is an educational and research prototype. Its predictions and explanations are not clinically validated and must not be used for medical diagnosis, treatment or clinical decision-making.
 
 ---
 
 ## ✨ Key Features
 
 - **Multi-Disease Prediction:** Supports Breast Cancer, Diabetes, Heart Disease, Chronic Kidney Disease (CKD), and Parkinson's Disease.
-- **Machine Learning Models:** Compares Logistic Regression, Random Forest, and XGBoost.
-- **Data Preprocessing:** Handles missing values, numerical scaling, categorical encoding, and feature preparation.
-- **Single & Batch Predictions:** Supports individual records and CSV-based batch analysis.
-- **Explainable AI:** Integrates SHAP and LIME to explain individual predictions.
-- **XAI Reliability Evaluation:** Measures explanation agreement, stability, local fidelity, and feature-replacement impact.
-- **Cross-Validation:** Evaluates predictive performance across multiple folds.
+- **Machine Learning Models:** Compares Logistic Regression, Random Forest and XGBoost.
+- **Recall-Focused Model Improvement:** Improves Diabetes detection through class-weighted model selection while evaluating specificity and balanced accuracy.
+- **Data Preprocessing:** Handles missing values, numerical scaling, categorical encoding and feature preparation.
+- **Single and Batch Prediction:** Supports individual predictions, manual feature entry and CSV-based batch analysis.
+- **Explainable AI:** Uses SHAP and LIME to interpret individual predictions.
+- **XAI Reliability Evaluation:** Measures explanation agreement, stability, fidelity and local surrogate fit.
+- **Cross-Validation:** Evaluates model performance across multiple training folds.
 - **Model Auditing:** Includes CKD data-quality checks and subject-aware Parkinson's evaluation.
-- **Interactive Dashboard:** Built using Streamlit.
+- **Interactive Dashboard:** Provides a consistent four-page Streamlit interface without threshold optimisation controls.
 
 ---
 
@@ -38,13 +40,13 @@ It combines disease-specific classification pipelines, SHAP and LIME explanation
 
 | Disease | Dataset | Prediction Target |
 |---|---|---|
-| Breast Cancer | Wisconsin Diagnostic Breast Cancer | Malignant / Benign |
+| Breast Cancer | Wisconsin Diagnostic Breast Cancer | Benign / Malignant |
 | Diabetes | Pima Indians Diabetes | Diabetes / No Diabetes |
 | Heart Disease | UCI Heart Disease | Heart Disease / No Heart Disease |
 | Chronic Kidney Disease | UCI CKD | CKD / No CKD |
 | Parkinson's Disease | UCI Parkinson's | Parkinson's / Healthy |
 
-The datasets are publicly available benchmark datasets used for research and machine learning experimentation.
+These datasets are publicly available benchmark datasets used for machine learning experimentation.
 
 ---
 
@@ -54,29 +56,40 @@ The application consists of four interactive pages.
 
 ### 1. Overview
 
-Provides a comprehensive summary of the project, including:
+Displays information about the selected disease and trained model.
 
-- Supported diseases and datasets
-- Selected machine learning models
-- Model evaluation metrics
-- Cross-validation performance
-- Model comparisons and audit results
+Features include:
+
+- Dataset size and feature count
+- Training and test record distribution
+- Selected machine learning model
+- Held-out test performance
+- Training cross-validation or validation model comparison
+- Target-class distribution
+
+The dashboard presents model comparison results in a compact format.
+
+For Diabetes and Heart Disease, the updated models are evaluated using training cross-validation and independently tested on held-out data.
 
 ### 2. Risk Prediction
 
-Allows users to generate predictions using trained machine learning models.
+Allows users to generate disease-specific predictions using trained machine learning models.
 
 **Single Prediction**
-- Enter disease-specific feature values.
-- Generate a prediction.
-- View the estimated probability and classification.
+
+- Select a record from the test dataset.
+- Enter feature values manually.
+- Generate a binary classification.
+- View estimated probabilities for both classes.
 
 **Batch Prediction**
+
 - Upload CSV datasets.
 - Generate predictions for multiple records.
-- Download the results for further analysis.
+- View predicted classes and probabilities.
+- Download prediction results.
 
-Predictions use the saved model's decision rule without a user-adjustable threshold slider.
+The application uses a fixed internal classification cutoff of **0.50**, without displaying a threshold optimisation section or user-adjustable threshold controls.
 
 ### 3. SHAP & LIME
 
@@ -84,38 +97,41 @@ Provides individual prediction explanations using two explainable AI techniques.
 
 **SHAP (SHapley Additive exPlanations)**
 
-- Estimates feature contributions to model predictions.
-- Identifies features influencing the model's output.
-- Helps interpret predictions at the individual-record level.
+- Estimates feature contributions to model outputs.
+- Identifies influential input features.
+- Provides individual-level explanations.
 
 **LIME (Local Interpretable Model-Agnostic Explanations)**
 
-- Approximates model behaviour around an individual prediction.
-- Provides local feature importance.
-- Reports local surrogate R² to assess explanation fidelity.
+- Approximates model behaviour around a selected prediction.
+- Generates local feature importance values.
+- Reports local surrogate R² as a measure of explanation fit.
 
 ### 4. XAI Reliability
 
-Evaluates how reliable and consistent the generated explanations are.
+Evaluates the consistency and reliability of explanations.
 
 Includes:
 
-- SHAP–LIME feature agreement
-- Explanation stability under input perturbations
-- LIME random-seed stability
-- Local surrogate fidelity
-- Feature-replacement analysis
-- Cross-disease explanation comparisons
+- SHAP–LIME top-feature agreement
+- SHAP explanation stability
+- LIME explanation stability
+- SHAP and LIME fidelity ratios
+- LIME local R²
+- Record-level explanation evaluation
+- Cross-disease reliability comparison
 
 ---
 
 ## 🤖 Machine Learning Models
 
-Three machine learning algorithms are evaluated.
+Three primary machine learning algorithms are evaluated.
 
 ### Logistic Regression
 
-A statistical classification algorithm that models the probability of a binary outcome.
+Logistic Regression is a statistical classification algorithm that estimates the probability of a binary outcome.
+
+Its probability function is:
 
 \[
 P(y=1|X)=\frac{1}{1+e^{-(w^TX+b)}}
@@ -123,43 +139,114 @@ P(y=1|X)=\frac{1}{1+e^{-(w^TX+b)}}
 
 ### Random Forest
 
-An ensemble learning algorithm that combines predictions from multiple decision trees.
+Random Forest is an ensemble learning algorithm that combines predictions from multiple decision trees.
 
 It uses bootstrap sampling and random feature selection to improve predictive robustness.
 
 ### XGBoost
 
-An optimised gradient-boosting algorithm that builds decision trees sequentially to minimise prediction errors.
+XGBoost is a gradient-boosting algorithm that constructs decision trees sequentially to minimise prediction errors.
 
-The best-performing model is selected using validation performance, with ROC-AUC as a primary selection metric.
+It supports regularisation and class weighting, making it suitable for imbalanced classification tasks.
+
+### Model Selection
+
+The original model development workflow compares algorithms using validation performance, including ROC-AUC.
+
+For Diabetes and Heart Disease, an additional recall-focused model selection experiment was conducted using five-fold stratified training cross-validation.
+
+Candidate models were evaluated using:
+
+- Recall
+- Specificity
+- Balanced accuracy
+- Precision
+- ROC-AUC
+
+The selected models were subsequently evaluated on held-out test data.
 
 ---
 
 ## 📊 Model Performance
 
-The following results were obtained from the project's final cross-validation evaluation.
+### 1. Final Held-out Test Performance
+
+Held-out testing evaluates the selected model on records excluded from model training and candidate selection.
+
+The updated Diabetes and Heart Disease results are:
+
+| Metric | Diabetes (XGBoost) | Heart Disease (Logistic Regression) |
+|---|---:|---:|
+| Recall | **83.33%** | **92.9%** |
+| Specificity | 70.00% | 81.8% |
+| Balanced Accuracy | 76.67% | 87.3% |
+| Precision | 60.00% | 81.2% |
+| Accuracy | 74.68% | — |
+| F1 Score | 0.698 | — |
+| ROC-AUC | 0.825 | — |
+| PR-AUC | 0.707 | — |
+
+The remaining Heart Disease metrics are available in its saved `test_metrics.json` report.
+
+### 2. Diabetes Model Improvement
+
+The final Diabetes dataset contains:
+
+| Dataset Property | Value |
+|---|---:|
+| Total Records | 768 |
+| Features | 8 |
+| Training Records | 614 |
+| Test Records | 154 |
+| Selected Model | XGBoost |
+
+The recall-focused improvement produced the following held-out test results:
+
+| Metric | Previous Model | Updated Model |
+|---|---:|---:|
+| Recall | 50.00% | **83.33%** |
+| Specificity | 82.00% | 70.00% |
+| Balanced Accuracy | 66.00% | **76.67%** |
+| Precision | 60.00% | 60.00% |
+
+The updated XGBoost model identifies a larger proportion of positive Diabetes cases.
+
+However, this improvement involves a trade-off: specificity decreased from 82% to 70%, indicating an increased false-positive rate.
+
+### 3. Heart Disease Model Evaluation
+
+The updated Heart Disease model uses Logistic Regression with class weighting.
+
+Its training cross-validation recall improved, while held-out test recall remained approximately **92.9%**.
+
+This distinction is important because improvements during model selection do not necessarily translate into improvements on unseen test data.
+
+### 4. Training Cross-Validation Model Comparison
+
+Cross-validation is used to compare candidate algorithms and configurations before final evaluation.
+
+| Disease | Selected Model | CV Recall | CV Specificity | CV Balanced Accuracy |
+|---|---|---:|---:|---:|
+| Diabetes | XGBoost | 79.9% | 70.8% | 75.3% |
+| Heart Disease | Logistic Regression | 82.0% | 82.4% | 82.2% |
+
+These results come from training cross-validation and should not be confused with held-out test performance.
+
+The dashboard presents a compact comparison of Logistic Regression, Random Forest and XGBoost, while detailed candidate results remain in the evaluation reports.
+
+### 5. Earlier Baseline Cross-Validation Results
+
+The following table records the project's earlier cross-validation evaluation before the recall-focused model updates.
 
 | Disease | ROC-AUC | Balanced Accuracy | Recall | Specificity |
 |---|---:|---:|---:|---:|
-| Breast Cancer | **0.996** | **97.2%** | 95.7% | 98.7% |
+| Breast Cancer | 0.996 | 97.2% | 95.7% | 98.7% |
 | Diabetes | 0.842 | 73.4% | 57.3% | 89.5% |
 | Heart Disease | 0.884 | 80.5% | 75.0% | 86.0% |
-| Chronic Kidney Disease | **1.000** | **99.4%** | 99.7% | 99.2% |
+| Chronic Kidney Disease | 1.000 | 99.4% | 99.7% | 99.2% |
 | Parkinson's Disease | 0.709 | 69.5% | 91.5% | 47.5% |
 
-### Performance Interpretation
-
-**Breast Cancer:** Demonstrates strong classification performance on the benchmark dataset.
-
-**Diabetes:** Achieves reasonable discrimination but has lower recall, indicating that some positive cases are missed.
-
-**Heart Disease:** Demonstrates good predictive performance with relatively balanced sensitivity and specificity.
-
-**Chronic Kidney Disease:** Achieves near-perfect benchmark performance. However, further investigation is necessary to assess generalisation beyond the dataset.
-
-**Parkinson's Disease:** Shows greater variability across subject-grouped validation folds, highlighting the challenges associated with small datasets and repeated recordings.
-
-These results represent cross-validation performance, not external clinical validation.
+These historical baseline results use a different evaluation stage from the final held-out metrics. They are retained for comparison and should not be interpreted as the performance of the updated Diabetes and Heart Disease models.
 
 ---
 
@@ -167,13 +254,13 @@ These results represent cross-validation performance, not external clinical vali
 
 Explainability is a central component of HealthExplain-AI.
 
-The project uses SHAP and LIME to interpret predictions and evaluate the reliability of explanations.
+The project uses SHAP and LIME to interpret model predictions and investigate explanation reliability.
 
 ### SHAP
 
 SHAP uses concepts from cooperative game theory to estimate the contribution of individual features.
 
-A simplified additive explanation is:
+Its additive explanation can be expressed as:
 
 \[
 f(x)=\phi_0+\sum_{i=1}^{M}\phi_i
@@ -187,7 +274,7 @@ Where:
 
 ### LIME
 
-LIME approximates the behaviour of a complex model around a selected observation using a simpler interpretable model.
+LIME approximates the behaviour of a complex model around an individual observation using a simpler interpretable surrogate model.
 
 Its optimisation objective is:
 
@@ -198,25 +285,29 @@ Its optimisation objective is:
 
 Where:
 
-- \(f\) is the original machine learning model.
+- \(f\) is the original model.
 - \(g\) is the interpretable surrogate model.
 - \(\pi_x\) defines the local neighbourhood.
 - \(L\) measures approximation error.
 - \(\Omega(g)\) penalises model complexity.
 
+SHAP and LIME use different explanation approaches, so differences between their feature rankings do not necessarily indicate an error.
+
 ---
 
 ## 📈 XAI Reliability Results
 
-The final explanation evaluation used eight records per disease.
+The latest SHAP and LIME evaluation was regenerated for the updated models.
 
-| Disease | SHAP–LIME Top-5 Agreement | Mean LIME R² |
-|---|---:|---:|
-| Breast Cancer | 0.369 | 0.834 |
-| Diabetes | **0.917** | 0.937 |
-| Heart Disease | 0.577 | **0.949** |
-| Chronic Kidney Disease | 0.427 | 0.655 |
-| Parkinson's Disease | 0.649 | 0.452 |
+The following results are based on **four sampled test records per disease**, making them preliminary rather than comprehensive reliability estimates.
+
+| Disease | SHAP–LIME Top-5 Agreement | SHAP Stability | LIME Stability | Mean LIME R² |
+|---|---:|---:|---:|---:|
+| Breast Cancer | 0.190 | 1.000 | 0.607 | 0.835 |
+| Diabetes | **0.607** | 0.875 | **0.917** | 0.738 |
+| Heart Disease | **0.607** | 1.000 | **0.917** | **0.936** |
+| Chronic Kidney Disease | 0.646 | 0.958 | 0.637 | 0.622 |
+| Parkinson's Disease | 0.488 | 1.000 | 0.589 | 0.454 |
 
 ### Explanation Reliability Metrics
 
@@ -224,31 +315,31 @@ The final explanation evaluation used eight records per disease.
 
 Measures the overlap between the top five features identified by SHAP and LIME using Jaccard similarity.
 
-**2. Explanation Stability**
+**2. SHAP Stability**
 
-Measures whether feature rankings remain consistent after small changes to input values.
+Evaluates the consistency of SHAP explanations under the evaluation's perturbation procedure.
 
-**3. LIME Seed Stability**
+**3. LIME Stability**
 
-Measures the consistency of LIME explanations across different random seeds.
+Evaluates whether LIME explanations remain consistent across repeated evaluations.
 
 **4. Local Surrogate Fidelity**
 
-Uses LIME R² to evaluate how closely the local surrogate approximates the original model.
+Uses LIME local R² to measure how closely the interpretable surrogate approximates the original model around a selected observation.
 
-**5. Feature-Replacement Analysis**
+**5. Feature-Replacement Fidelity**
 
-Compares changes in model output after replacing highly ranked features with changes after replacing randomly selected features.
+Examines how model predictions change when influential features are replaced compared with reference feature replacements.
 
 ### Key Observations
 
-- Diabetes demonstrates high SHAP–LIME agreement.
-- Heart Disease demonstrates strong LIME local fidelity.
-- Breast Cancer achieves good predictive performance but lower explanation agreement.
-- CKD has moderate-to-weak LIME fidelity.
-- Parkinson's Disease has relatively low LIME fidelity and requires cautious interpretation.
+- **Breast Cancer:** Shows strong predictive performance in baseline evaluation, but relatively low SHAP–LIME agreement.
+- **Diabetes:** Achieves a SHAP–LIME agreement score of 0.607, with relatively stable LIME explanations.
+- **Heart Disease:** Achieves high SHAP stability and strong LIME local fidelity.
+- **Chronic Kidney Disease:** Shows moderate explanation agreement, while local surrogate fidelity requires further improvement.
+- **Parkinson's Disease:** Has relatively low LIME local R², indicating that local surrogate explanations should be interpreted cautiously.
 
-Differences between SHAP and LIME are not necessarily errors. Both techniques use different approximation approaches.
+These metrics evaluate explanation behaviour, not clinical correctness.
 
 ---
 
@@ -256,19 +347,22 @@ Differences between SHAP and LIME are not necessarily errors. Both techniques us
 
 ### Cross-Validation
 
-Repeated cross-validation was used to evaluate the consistency of model performance.
+Cross-validation evaluates the consistency of predictive performance across different training partitions.
 
-The evaluation includes:
+The evaluation considers:
 
 - ROC-AUC
 - PR-AUC
 - Balanced accuracy
 - Recall
 - Specificity
+- Precision
+
+The updated recall-focused experiment uses five-fold stratified training cross-validation.
 
 ### CKD Data Audit
 
-The CKD dataset was investigated for duplicates, conflicting labels, and missingness-related predictive signals.
+The Chronic Kidney Disease dataset was investigated for duplicate records, conflicting labels and missingness-related predictive signals.
 
 | Audit Metric | Result |
 |---|---:|
@@ -279,15 +373,15 @@ The CKD dataset was investigated for duplicates, conflicting labels, and missing
 | Conflicting Labels | 0 |
 | Missingness-Only ROC-AUC | 0.862 |
 
-The results indicate that missingness patterns contain substantial predictive information.
+The audit found no exact duplicate leakage.
 
-Although no exact duplicate leakage was identified, near-perfect CKD performance requires cautious interpretation.
+However, missingness patterns contain substantial predictive information, meaning that near-perfect CKD benchmark performance requires cautious interpretation.
 
 ### Parkinson's Subject-Level Evaluation
 
-Parkinson's recordings were evaluated using subject-aware cross-validation to reduce overlap between recordings belonging to the same subject.
+Parkinson's recordings were evaluated using subject-aware validation to reduce overlap between recordings belonging to the same subject.
 
-Additional candidate models were compared, including regularised Logistic Regression, Random Forest, and XGBoost.
+Additional candidate models were compared, including regularised Logistic Regression, Random Forest and XGBoost.
 
 No alternative satisfied the predefined improvement criteria, so the existing trained model was retained.
 
@@ -299,16 +393,19 @@ No alternative satisfied the predefined improvement criteria, so the existing tr
 HealthExplain-AI/
 │
 ├── app_multi.py
-│   └── Multi-page Streamlit dashboard
+│   └── Four-page Streamlit dashboard
 │
 ├── run_all_diseases.py
-│   └── Data processing, model training and evaluation
+│   └── Data preparation, model training and XAI evaluation
+│
+├── improve_recall.py
+│   └── Diabetes and Heart Disease recall improvement
 │
 ├── final_validation.py
-│   └── Cross-validation and XAI robustness testing
+│   └── Cross-validation and robustness experiments
 │
 ├── reliable_xai.py
-│   └── LIME reliability evaluation and configuration
+│   └── Explanation reliability evaluation
 │
 ├── fix_model_issues.py
 │   └── CKD and Parkinson's model audits
@@ -331,7 +428,7 @@ HealthExplain-AI/
 └── README.md
 ```
 
-Some data, model, and report files are generated during the training and evaluation processes.
+Some data, model and report files are generated during training and evaluation. The required saved artifacts must be available when running the dashboard.
 
 ---
 
@@ -341,7 +438,6 @@ Some data, model, and report files are generated during the training and evaluat
 
 ```bash
 git clone https://github.com/pari-dudeja2005/HealthExplain-AI.git
-
 cd HealthExplain-AI
 ```
 
@@ -369,7 +465,6 @@ source .venv/bin/activate
 
 ```bash
 python -m pip install --upgrade pip
-
 python -m pip install -r requirements.txt
 ```
 
@@ -379,35 +474,43 @@ python -m pip install -r requirements.txt
 streamlit run app_multi.py
 ```
 
-The Streamlit application will open in your browser, usually at:
+The Streamlit application will normally open at:
 
 ```text
 http://localhost:8501
 ```
 
-### 5. Train Models (If Required)
+### 5. Train Models (Only If Required)
 
-If the trained model files are unavailable, run:
+If trained model files are unavailable, the original training workflow can be executed using:
 
 ```bash
 python run_all_diseases.py
 ```
 
-### 6. Run Final Evaluation
+**Important:** Running this command without `--skip-training` can overwrite the updated recall-improved models.
+
+### 6. Regenerate XAI Evaluations Without Retraining
+
+```bash
+python run_all_diseases.py --only diabetes --skip-training
+python run_all_diseases.py --only heart_disease --skip-training
+```
+
+These commands regenerate explanation evaluation results using the saved models.
+
+### 7. Run Additional Validation
 
 ```bash
 python final_validation.py
 ```
 
-### 7. Run Additional Audits
+Additional auditing scripts:
 
 ```bash
 python fix_model_issues.py
-
 python reliable_xai.py
 ```
-
-These scripts generate additional model-quality and explanation-reliability reports.
 
 ---
 
@@ -425,7 +528,14 @@ HealthExplain-AI can be deployed using Streamlit Community Cloud.
 6. Set the application entry point to `app_multi.py`.
 7. Deploy the application.
 
-The deployment requires the trained models, relevant processed datasets, evaluation reports, and Python dependencies to be available.
+The deployment requires:
+
+- Trained model files
+- Processed datasets
+- Evaluation reports
+- Python dependencies
+
+The Streamlit application link is provided at the beginning of this README. The live deployment should be checked to confirm that it uses the latest committed code.
 
 ---
 
@@ -447,13 +557,15 @@ The deployment requires the trained models, relevant processed datasets, evaluat
 
 ## ⚠️ Limitations
 
-Although HealthExplain-AI provides an integrated predictive and explainability framework, several limitations remain.
+Although HealthExplain-AI provides an integrated prediction and explainability framework, several limitations remain.
 
 - The models are trained on public benchmark datasets rather than independently collected clinical data.
-- Dataset size, sampling, and missingness patterns may affect generalisation.
-- CKD's near-perfect classification results require further external validation.
-- Parkinson's model performance varies substantially between subject-grouped validation folds.
+- Dataset size, sampling and missingness patterns may affect generalisation.
+- The improved Diabetes recall is accompanied by lower specificity.
+- CKD's near-perfect benchmark classification results require external validation.
+- Parkinson's model performance varies across subject-grouped validation folds.
 - LIME local fidelity is relatively weak for CKD and Parkinson's Disease.
+- The latest XAI reliability results are based on a small number of sampled records.
 - SHAP and LIME explanations describe model behaviour and do not establish medical causality.
 - The application is intended for educational and research purposes only.
 
@@ -463,8 +575,9 @@ Although HealthExplain-AI provides an integrated predictive and explainability f
 
 - Integration of additional disease datasets.
 - External validation using independently collected clinical datasets.
-- Improved model calibration and risk estimation.
+- Improved probability calibration and risk estimation.
 - More robust explanation techniques.
+- Expanded XAI reliability evaluation using larger test samples.
 - Improved LIME fidelity for CKD and Parkinson's Disease.
 - Fairness and subgroup analysis where suitable data is available.
 - Clinician-reviewed model interpretation.
