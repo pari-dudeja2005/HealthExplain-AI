@@ -3,8 +3,8 @@
   "name": "Diabetes",
   "negative_label": "No Diabetes",
   "positive_label": "Diabetes",
-  "best_model": "Logistic Regression",
-  "selection_metric": "validation_roc_auc",
+  "best_model": "XGBoost depth=3 pos_weight=2.804",
+  "selection_metric": "training_cv_recall_with_specificity_safeguards",
   "train_records": 614,
   "validation_records": 123,
   "test_records": 154,
@@ -21,23 +21,39 @@
   ],
   "categorical_features": [],
   "test_metrics": {
-    "accuracy": 0.7077922077922078,
+    "accuracy": 0.7467532467532467,
     "precision": 0.6,
-    "recall": 0.5,
-    "f1": 0.5454545454545454,
-    "roc_auc": 0.812962962962963,
-    "pr_auc": 0.673326163579994
+    "recall": 0.8333333333333334,
+    "f1": 0.6976744186046512,
+    "roc_auc": 0.825,
+    "pr_auc": 0.7071387848759003,
+    "balanced_accuracy": 0.7666666666666666,
+    "specificity": 0.7
   },
   "confusion_matrix": [
     [
-      82,
-      18
+      70,
+      30
     ],
     [
-      27,
-      27
+      9,
+      45
     ]
   ],
   "group_safe_split": false,
-  "threshold": 0.5
+  "threshold": 0.5,
+  "training_cv_metrics": {
+    "accuracy": 0.739413680781759,
+    "precision": 0.59375,
+    "recall": 0.7990654205607477,
+    "specificity": 0.7075,
+    "balanced_accuracy": 0.7532827102803739,
+    "f1": 0.6812749003984063,
+    "roc_auc": 0.827032710280374,
+    "pr_auc": 0.6984479917259484,
+    "tn": 283,
+    "fp": 117,
+    "fn": 43,
+    "tp": 171
+  }
 }

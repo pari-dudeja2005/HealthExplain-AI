@@ -3,8 +3,8 @@
   "name": "Heart Disease",
   "negative_label": "No Heart Disease",
   "positive_label": "Heart Disease",
-  "best_model": "Logistic Regression",
-  "selection_metric": "validation_roc_auc",
+  "best_model": "Logistic Regression C=3.0 weights={0: 1, 1: 1.5}",
+  "selection_metric": "training_cv_recall_with_specificity_safeguards",
   "train_records": 242,
   "validation_records": 49,
   "test_records": 61,
@@ -30,8 +30,10 @@
     "precision": 0.8125,
     "recall": 0.9285714285714286,
     "f1": 0.8666666666666667,
-    "roc_auc": 0.9512987012987013,
-    "pr_auc": 0.9233707417020479
+    "roc_auc": 0.948051948051948,
+    "pr_auc": 0.9207728104011719,
+    "balanced_accuracy": 0.8733766233766234,
+    "specificity": 0.8181818181818182
   },
   "confusion_matrix": [
     [
@@ -44,5 +46,19 @@
     ]
   ],
   "group_safe_split": false,
-  "threshold": 0.5
+  "threshold": 0.5,
+  "training_cv_metrics": {
+    "accuracy": 0.8223140495867769,
+    "precision": 0.7982456140350878,
+    "recall": 0.8198198198198198,
+    "specificity": 0.8244274809160306,
+    "balanced_accuracy": 0.8221236503679252,
+    "f1": 0.8088888888888889,
+    "roc_auc": 0.8895536758132178,
+    "pr_auc": 0.8813851899909193,
+    "tn": 108,
+    "fp": 23,
+    "fn": 20,
+    "tp": 91
+  }
 }

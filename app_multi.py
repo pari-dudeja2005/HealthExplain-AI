@@ -1,5 +1,5 @@
 
-"""HealthExplain-AI: Five-Disease Prediction and Explainability Dashboard.
+"""HealthExplain-AI: Final Five-Disease Streamlit Dashboard.
 
 Run:
     streamlit run app_multi.py
@@ -16,12 +16,8 @@ import streamlit as st
 from run_all_diseases import (
     DISEASES,
     REPORT_DIR,
-    explain_record,
     paths_for,
-)
-
-from reliable_xai import (
-    CONFIG_PATH,
+    explain_record,
     make_explainers,
 )
 
@@ -35,65 +31,55 @@ st.set_page_config(
     layout="wide"
 )
 
-st.markdown(
-    """
-    <style>
-    .block-container {
-        max-width: 1400px;
-        padding-top: 2rem;
-    }
-
-    h1 {
-        font-size: 2rem !important;
-        font-weight: 650 !important;
-    }
-
-    section[data-testid="stSidebar"] {
-        border-right: 1px solid rgba(120,120,120,.15);
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+<style>
+.block-container {
+    max-width: 1400px;
+    padding-top: 2rem;
+}
+h1 {
+    font-size: 2rem !important;
+    font-weight: 650 !important;
+}
+section[data-testid="stSidebar"] {
+    border-right: 1px solid rgba(120,120,120,.15);
+}
+</style>
+""", unsafe_allow_html=True)
 
 
 # ============================================================
-# DATA LOADING
+# DATA AND MODEL LOADING
 # ============================================================
+
+def file_version(path):
+    """Refresh cached files when models or reports change."""
+    return path.stat().st_mtime_ns if path.exists() else 0
+
 
 @st.cache_resource
-def load_model(disease, model_version):
-    return joblib.load(
-        paths_for(disease)["model"]
-    )
+def load_model(disease, version):
+    return joblib.load(paths_for(disease)["model"])
 
 
 @st.cache_data
-def load_records(disease):
+def load_records(disease, train_version, test_version):
+    p = paths_for(disease)
 
-    paths = paths_for(disease)
+    train = pd.read_csv(p["train"])
+    test = pd.read_csv(p["test"])
 
-    train_df = pd.read_csv(
-        paths["train"]
-    )
-
-    test_df = pd.read_csv(
-        paths["test"]
-    )
-
-    return train_df, test_df
+    return train, test
 
 
 @st.cache_data
-def load_report(disease, report_version):
-
-    path = (
-        paths_for(disease)["report"]
-        / "test_metrics.json"
-    )
+def load_report(disease, version):
+    p = paths_for(disease)
 
     return json.loads(
-        path.read_text(encoding="utf-8")
+        (p["report"] / "test_metrics.json").read_text(
+            encoding="utf-8"
+        )
     )
 
 
@@ -101,118 +87,205 @@ def load_report(disease, report_version):
 def load_explainers(
     disease,
     model_version,
-    lime_config_version
+    train_version,
+    test_version
 ):
+    model = load_model(disease, model_version)
 
-    model = load_model(
+    train_df, _ = load_records(
         disease,
-        model_version
-    )
-
-    train_df, _ = load_records(disease)
-
-    X_train = train_df.drop(
-        columns="target"
+        train_version,
+        test_version
     )
 
     return make_explainers(
         model,
-        X_train
+        train_df.drop(columns="target")
     )
+
+
+# ============================================================
+# COMPACT MODEL COMPARISON
+# ============================================================
+
+def model_family(name):
+    """Convert detailed model names to simple algorithm names."""
+
+    for family in [
+        "Logistic Regression",
+        "Random Forest",
+        "XGBoost"
+    ]:
+        if str(name).startswith(family):
+            return family
+
+    return str(name)
+
+
+def compact_model_comparison(comparison, deployed_name):
+    """
+    Display one configuration per algorithm.
+
+    For the deployed algorithm, use its actual CV results.
+    For the other algorithms, show the configuration with
+    the highest cross-validation balanced accuracy.
+
+    Original comparison files are not modified.
+    """
+
+    if "model" not in comparison.columns:
+        return comparison
+
+    choices = comparison.copy()
+
+    choices["family"] = choices["model"].map(
+        model_family
+    )
+
+    families = [
+        "Logistic Regression",
+        "Random Forest",
+        "XGBoost"
+    ]
+
+    choices = choices[
+        choices["family"].isin(families)
+    ]
+
+    if choices.empty:
+        return comparison
+
+    displayed = []
+
+    for family in families:
+
+        group = choices[
+            choices["family"] == family
+        ]
+
+        if group.empty:
+            continue
+
+        deployed = group[
+            group["model"] == deployed_name
+        ]
+
+        if not deployed.empty:
+            row = deployed.iloc[0]
+
+        else:
+            ranking = [
+                column
+                for column in [
+                    "balanced_accuracy",
+                    "roc_auc",
+                    "recall"
+                ]
+                if column in group.columns
+            ]
+
+            if ranking:
+                row = group.sort_values(
+                    ranking,
+                    ascending=False
+                ).iloc[0]
+            else:
+                row = group.iloc[0]
+
+        summary = {
+            "model": family
+        }
+
+        for metric in [
+            "accuracy",
+            "precision",
+            "recall",
+            "f1",
+            "roc_auc",
+            "pr_auc"
+        ]:
+            if metric in group.columns:
+                summary[metric] = row[metric]
+
+        displayed.append(summary)
+
+    return pd.DataFrame(displayed)
 
 
 # ============================================================
 # PREDICTION FUNCTIONS
 # ============================================================
 
-def validate_features(df, model):
+def validated_features(df, model):
 
-    expected = list(
-        model.feature_names_in_
-    )
+    expected = list(model.feature_names_in_)
 
-    features = df.drop(
+    df = df.drop(
         columns=["target"],
         errors="ignore"
     ).copy()
 
     missing = sorted(
-        set(expected) - set(features.columns)
+        set(expected) - set(df.columns)
     )
 
     extra = sorted(
-        set(features.columns) - set(expected)
+        set(df.columns) - set(expected)
     )
 
     if missing or extra:
-
         raise ValueError(
-            f"Missing columns: {missing}. "
-            f"Unexpected columns: {extra}."
+            f"Missing columns: {missing}; "
+            f"Unexpected columns: {extra}"
         )
 
-    return features[expected]
+    return df[expected]
 
 
-def predict_table(df, model, info):
+def probability_results(df, model, info):
 
-    features = validate_features(
-        df,
-        model
-    )
+    df = validated_features(df, model)
 
-    probabilities = model.predict_proba(
-        features
-    )[:, 1]
+    probability = model.predict_proba(df)[:, 1]
 
-    predicted = model.predict(
-        features
+    result = df.copy()
+
+    result["positive_probability"] = probability
+
+    result["negative_probability"] = 1 - probability
+
+    result["predicted_class"] = (
+        probability >= 0.50
     ).astype(int)
 
-    output = features.copy()
-
-    output["positive_probability"] = (
-        probabilities
-    )
-
-    output["negative_probability"] = (
-        1.0 - probabilities
-    )
-
-    output["predicted_class"] = predicted
-
-    output["predicted_label"] = np.where(
-        predicted == 1,
+    result["predicted_label"] = np.where(
+        result["predicted_class"] == 1,
         info["positive"],
         info["negative"]
     )
 
-    return output
+    return result
 
 
 # ============================================================
-# VISUALISATION
+# EXPLANATION CHARTS
 # ============================================================
 
-def explanation_chart(
-    df,
-    value_column,
-    heading
-):
+def importance_chart(df, value_col, title):
 
-    top = df.head(10).iloc[::-1]
+    subset = df.head(10).iloc[::-1]
+
+    colours = [
+        "#B86161" if value > 0 else "#507B9D"
+        for value in subset[value_col]
+    ]
 
     fig = go.Figure(
         go.Bar(
-            x=top[value_column],
-            y=top["feature"],
+            x=subset[value_col],
+            y=subset["feature"],
             orientation="h",
-            marker_color=[
-                "#B86161"
-                if value > 0
-                else "#507B9D"
-                for value in top[value_column]
-            ]
+            marker_color=colours
         )
     )
 
@@ -223,7 +296,7 @@ def explanation_chart(
     )
 
     fig.update_layout(
-        title=heading,
+        title=title,
         height=420,
         margin=dict(
             l=5,
@@ -243,16 +316,15 @@ def explanation_chart(
 # ============================================================
 
 available = [
-    key
-    for key in DISEASES
-    if paths_for(key)["model"].exists()
+    disease
+    for disease in DISEASES
+    if paths_for(disease)["model"].exists()
 ]
 
 if not available:
 
     st.error(
-        "No trained models found. "
-        "Run python run_all_diseases.py first."
+        "No trained multi-disease models found."
     )
 
     st.stop()
@@ -263,7 +335,7 @@ st.sidebar.title("HealthExplain-AI")
 disease = st.sidebar.selectbox(
     "Disease",
     available,
-    format_func=lambda key: DISEASES[key]["name"]
+    format_func=lambda d: DISEASES[d]["name"]
 )
 
 page = st.sidebar.radio(
@@ -278,28 +350,21 @@ page = st.sidebar.radio(
 
 
 # ============================================================
-# SELECTED DISEASE
+# LOAD SELECTED DISEASE
 # ============================================================
 
 info = DISEASES[disease]
 
-paths = paths_for(disease)
+p = paths_for(disease)
 
-model_version = (
-    paths["model"].stat().st_mtime_ns
-)
+model_version = file_version(p["model"])
 
-report_version = (
-    (
-        paths["report"]
-        / "test_metrics.json"
-    ).stat().st_mtime_ns
-)
+train_version = file_version(p["train"])
 
-lime_config_version = (
-    CONFIG_PATH.stat().st_mtime_ns
-    if CONFIG_PATH.exists()
-    else 0
+test_version = file_version(p["test"])
+
+report_version = file_version(
+    p["report"] / "test_metrics.json"
 )
 
 model = load_model(
@@ -307,15 +372,15 @@ model = load_model(
     model_version
 )
 
-train_df, test_df = load_records(disease)
-
-X_train = train_df.drop(
-    columns="target"
+train_df, test_df = load_records(
+    disease,
+    train_version,
+    test_version
 )
 
-X_test = test_df.drop(
-    columns="target"
-)
+X_train = train_df.drop(columns="target")
+
+X_test = test_df.drop(columns="target")
 
 report = load_report(
     disease,
@@ -356,32 +421,45 @@ if page == "Overview":
     )
 
     st.write(
-        f"Selected Model: **{report['best_model']}**"
+        f"Selected Model: "
+        f"**{model_family(report['best_model'])}**"
     )
 
     # --------------------------------------------------------
-    # HELD-OUT TEST PERFORMANCE
+    # TEST PERFORMANCE
     # --------------------------------------------------------
 
-    st.subheader("Held-Out Test Performance")
+    st.subheader("Held-out Test Performance")
 
     metrics = report["test_metrics"]
+
+    tn, fp = report["confusion_matrix"][0]
+
+    specificity = metrics.get(
+        "specificity",
+        tn / (tn + fp) if tn + fp else 0.0
+    )
+
+    balanced_accuracy = metrics.get(
+        "balanced_accuracy",
+        (metrics["recall"] + specificity) / 2
+    )
 
     c1, c2, c3, c4 = st.columns(4)
 
     c1.metric(
-        "Accuracy",
-        f"{metrics['accuracy']:.2%}"
+        "Recall",
+        f"{metrics['recall']:.2%}"
     )
 
     c2.metric(
-        "Precision",
-        f"{metrics['precision']:.2%}"
+        "Specificity",
+        f"{specificity:.2%}"
     )
 
     c3.metric(
-        "Recall",
-        f"{metrics['recall']:.2%}"
+        "Balanced Accuracy",
+        f"{balanced_accuracy:.2%}"
     )
 
     c4.metric(
@@ -389,15 +467,52 @@ if page == "Overview":
         f"{metrics['roc_auc']:.3f}"
     )
 
+    with st.expander("Additional Test Metrics"):
+
+        a, b, c, d = st.columns(4)
+
+        a.metric(
+            "Accuracy",
+            f"{metrics['accuracy']:.2%}"
+        )
+
+        b.metric(
+            "Precision",
+            f"{metrics['precision']:.2%}"
+        )
+
+        c.metric(
+            "F1 Score",
+            f"{metrics['f1']:.3f}"
+        )
+
+        d.metric(
+            "PR-AUC",
+            f"{metrics['pr_auc']:.3f}"
+        )
+
     # --------------------------------------------------------
-    # MODEL COMPARISON
+    # COMPACT MODEL COMPARISON
     # --------------------------------------------------------
 
-    st.subheader("Model Comparison")
+    is_cv_comparison = report.get(
+        "selection_metric", ""
+    ).startswith("training_cv_")
+
+    if is_cv_comparison:
+
+        st.subheader(
+            "Training Cross-Validation Model Comparison"
+        )
+
+    else:
+
+        st.subheader(
+            "Validation Model Comparison"
+        )
 
     comparison_path = (
-        paths["report"]
-        / "model_comparison.csv"
+        p["report"] / "model_comparison.csv"
     )
 
     if comparison_path.exists():
@@ -406,11 +521,30 @@ if page == "Overview":
             comparison_path
         )
 
+        if is_cv_comparison:
+
+            comparison = compact_model_comparison(
+                comparison,
+                report["best_model"]
+            )
+
         st.dataframe(
             comparison.round(4),
             hide_index=True,
-            use_container_width=True
+            width="stretch"
         )
+
+        if is_cv_comparison:
+
+            st.caption(
+                "One training cross-validation configuration "
+                "per algorithm is displayed. "
+                "The selected algorithm uses its deployed "
+                "configuration. Other algorithms show their "
+                "highest balanced-accuracy configurations. "
+                "These scores are separate from the "
+                "held-out test results."
+            )
 
     # --------------------------------------------------------
     # TARGET DISTRIBUTION
@@ -434,186 +568,26 @@ if page == "Overview":
             y=[
                 int(counts.get(0, 0)),
                 int(counts.get(1, 0))
-            ],
-            marker_color=[
-                "#507B9D",
-                "#B86161"
             ]
         )
     )
 
     fig.update_layout(
         height=300,
-        yaxis_title="Records",
-        xaxis_title=""
+        yaxis_title="Records"
     )
 
     st.plotly_chart(
         fig,
-        use_container_width=True
+        width="stretch"
     )
 
-    # --------------------------------------------------------
-    # CROSS-VALIDATION
-    # --------------------------------------------------------
+    if report.get("group_safe_split"):
 
-    st.subheader("Model Performance Validation")
-
-    cv_path = (
-        paths["report"]
-        / "cross_validation_audit_v3.csv"
-    )
-
-    if cv_path.exists():
-
-        audit = pd.read_csv(cv_path)
-
-        c1, c2, c3 = st.columns(3)
-
-        c1.metric(
-            "Valid CV Folds",
-            len(audit)
+        st.caption(
+            "Parkinson's training and test data "
+            "are separated by subject."
         )
-
-        c2.metric(
-            "Mean CV ROC-AUC",
-            f"{audit['roc_auc'].mean():.3f}"
-        )
-
-        c3.metric(
-            "Mean CV Balanced Accuracy",
-            f"{audit['balanced_accuracy'].mean():.3f}"
-        )
-
-        with st.expander(
-            "View Cross-Validation Results"
-        ):
-
-            st.dataframe(
-                audit.round(4),
-                hide_index=True,
-                use_container_width=True
-            )
-
-            st.caption(
-                "Cross-validation uses the original "
-                "training partition and the selected "
-                "model family. Held-out test records "
-                "are excluded."
-            )
-
-        if disease == "parkinsons":
-
-            if "subject_roc_auc" in audit.columns:
-
-                subject_auc = audit[
-                    "subject_roc_auc"
-                ].mean()
-
-                st.metric(
-                    "Mean Subject-Level ROC-AUC",
-                    f"{subject_auc:.3f}"
-                    if pd.notna(subject_auc)
-                    else "N/A"
-                )
-
-            st.caption(
-                "Parkinson's cross-validation separates "
-                "recordings by subject."
-            )
-
-    else:
-
-        st.info(
-            "Run python final_validation.py "
-            "to generate cross-validation results."
-        )
-
-    # --------------------------------------------------------
-    # PARKINSON'S MODEL AUDIT
-    # --------------------------------------------------------
-
-    if disease == "parkinsons":
-
-        candidate_path = (
-            paths["report"]
-            / "parkinsons_model_comparison_v4.csv"
-        )
-
-        if candidate_path.exists():
-
-            with st.expander(
-                "Parkinson's Subject-Level Model Audit"
-            ):
-
-                candidate_df = pd.read_csv(
-                    candidate_path
-                )
-
-                st.dataframe(
-                    candidate_df.round(4),
-                    hide_index=True,
-                    use_container_width=True
-                )
-
-                st.caption(
-                    "Candidate results are exploratory. "
-                    "The comparison does not mean that "
-                    "the active model was replaced."
-                )
-
-    # --------------------------------------------------------
-    # CKD DATA QUALITY AUDIT
-    # --------------------------------------------------------
-
-    if disease == "kidney_disease":
-
-        summary_path = (
-            paths["report"]
-            / "ckd_quality_summary_v4.json"
-        )
-
-        if summary_path.exists():
-
-            with st.expander(
-                "CKD Data Quality Audit"
-            ):
-
-                audit_summary = json.loads(
-                    summary_path.read_text(
-                        encoding="utf-8"
-                    )
-                )
-
-                st.json(audit_summary)
-
-        missing_path = (
-            paths["report"]
-            / "ckd_missingness_audit_v4.csv"
-        )
-
-        if not missing_path.exists():
-
-            missing_path = (
-                paths["report"]
-                / "missingness_audit_v3.csv"
-            )
-
-        if missing_path.exists():
-
-            with st.expander(
-                "CKD Missingness Analysis"
-            ):
-
-                missing_df = pd.read_csv(
-                    missing_path
-                )
-
-                st.dataframe(
-                    missing_df.round(4),
-                    hide_index=True,
-                    use_container_width=True
-                )
 
 
 # ============================================================
@@ -622,7 +596,7 @@ if page == "Overview":
 
 elif page == "Risk Prediction":
 
-    single_tab, batch_tab = st.tabs(
+    tab_single, tab_batch = st.tabs(
         [
             "Single Prediction",
             "Batch Prediction"
@@ -633,10 +607,10 @@ elif page == "Risk Prediction":
     # SINGLE PREDICTION
     # --------------------------------------------------------
 
-    with single_tab:
+    with tab_single:
 
         source = st.radio(
-            "Input Source",
+            "Input",
             [
                 "Test Dataset",
                 "Manual Entry"
@@ -652,32 +626,25 @@ elif page == "Risk Prediction":
                     "Record Number",
                     min_value=1,
                     max_value=len(X_test),
-                    value=1,
-                    step=1
+                    value=1
                 )
 
                 patient = X_test.iloc[
                     [int(number) - 1]
                 ].copy()
 
-                with st.expander(
-                    "Input Features"
-                ):
+                with st.expander("Input Features"):
 
                     st.dataframe(
                         patient.T,
-                        use_container_width=True
+                        width="stretch"
                     )
 
             else:
 
-                numeric = set(
-                    report["numeric_features"]
-                )
+                numeric = report["numeric_features"]
 
-                categorical = set(
-                    report["categorical_features"]
-                )
+                categorical = report["categorical_features"]
 
                 values = {}
 
@@ -696,19 +663,17 @@ elif page == "Risk Prediction":
                                 errors="coerce"
                             ).median()
 
-                            default = (
+                            default_value = (
                                 float(median)
                                 if pd.notna(median)
                                 else 0.0
                             )
 
-                            values[feature] = (
-                                st.number_input(
-                                    feature,
-                                    value=default,
-                                    format="%.4f",
-                                    key=f"{disease}_{feature}"
-                                )
+                            values[feature] = st.number_input(
+                                feature,
+                                value=default_value,
+                                format="%.4f",
+                                key=f"{disease}_{feature}"
                             )
 
                         elif feature in categorical:
@@ -719,26 +684,18 @@ elif page == "Risk Prediction":
                                 .astype(str)
                                 .unique()
                                 .tolist()
-                            ) or [""]
-
-                            values[feature] = (
-                                st.selectbox(
-                                    feature,
-                                    options,
-                                    key=f"{disease}_{feature}"
-                                )
                             )
 
-                        else:
+                            if not options:
+                                options = [""]
 
-                            st.error(
-                                f"Unrecognised feature type: "
-                                f"{feature}"
+                            values[feature] = st.selectbox(
+                                feature,
+                                options,
+                                key=f"{disease}_{feature}"
                             )
 
-                patient = pd.DataFrame(
-                    [values]
-                )
+                patient = pd.DataFrame([values])
 
             submitted = st.form_submit_button(
                 "Predict",
@@ -749,7 +706,7 @@ elif page == "Risk Prediction":
 
             try:
 
-                prediction = predict_table(
+                result = probability_results(
                     patient,
                     model,
                     info
@@ -762,24 +719,18 @@ elif page == "Risk Prediction":
                 c1, c2, c3 = st.columns(3)
 
                 c1.metric(
-                    "Predicted Class",
-                    prediction["predicted_label"]
+                    "Prediction",
+                    result["predicted_label"]
                 )
 
                 c2.metric(
-                    f"{info['negative']} Probability",
-                    f"{prediction['negative_probability']:.2%}"
+                    info["negative"],
+                    f"{result['negative_probability']:.2%}"
                 )
 
                 c3.metric(
-                    f"{info['positive']} Probability",
-                    f"{prediction['positive_probability']:.2%}"
-                )
-
-                st.caption(
-                    "Predictions use the trained model's "
-                    "classification rule. They are not "
-                    "clinical diagnoses."
+                    info["positive"],
+                    f"{result['positive_probability']:.2%}"
                 )
 
             except Exception as exc:
@@ -790,7 +741,7 @@ elif page == "Risk Prediction":
     # BATCH PREDICTION
     # --------------------------------------------------------
 
-    with batch_tab:
+    with tab_batch:
 
         uploaded = st.file_uploader(
             "Upload CSV",
@@ -810,13 +761,11 @@ elif page == "Risk Prediction":
 
         else:
 
-            batch = pd.read_csv(
-                uploaded
-            )
+            batch = pd.read_csv(uploaded)
 
         st.dataframe(
             batch.head(),
-            use_container_width=True
+            width="stretch"
         )
 
         if st.button(
@@ -826,56 +775,71 @@ elif page == "Risk Prediction":
 
             try:
 
-                result = predict_table(
+                result = probability_results(
                     batch,
                     model,
                     info
                 )
 
-                c1, c2, c3 = st.columns(3)
-
-                c1.metric(
-                    "Total Records",
-                    len(result)
-                )
-
-                c2.metric(
-                    info["negative"],
-                    int(
-                        (
-                            result["predicted_class"] == 0
-                        ).sum()
-                    )
-                )
-
-                c3.metric(
-                    info["positive"],
-                    int(
-                        (
-                            result["predicted_class"] == 1
-                        ).sum()
-                    )
-                )
-
-                st.dataframe(
-                    result,
-                    use_container_width=True
-                )
-
-                st.download_button(
-                    "Download Results",
-                    data=result.to_csv(index=False),
-                    file_name=f"{disease}_predictions.csv",
-                    mime="text/csv"
-                )
+                st.session_state[
+                    f"batch_{disease}"
+                ] = result
 
             except Exception as exc:
 
                 st.error(str(exc))
 
+                st.session_state.pop(
+                    f"batch_{disease}",
+                    None
+                )
+
+        result = st.session_state.get(
+            f"batch_{disease}"
+        )
+
+        if result is not None:
+
+            c1, c2, c3 = st.columns(3)
+
+            c1.metric(
+                "Records",
+                len(result)
+            )
+
+            c2.metric(
+                info["negative"],
+                int(
+                    (
+                        result["predicted_class"] == 0
+                    ).sum()
+                )
+            )
+
+            c3.metric(
+                info["positive"],
+                int(
+                    (
+                        result["predicted_class"] == 1
+                    ).sum()
+                )
+            )
+
+            st.dataframe(
+                result,
+                width="stretch"
+            )
+
+            st.download_button(
+                "Download Results",
+                result.to_csv(index=False),
+                file_name=f"{disease}_predictions.csv",
+                mime="text/csv"
+            )
+
 
 # ============================================================
-# PAGE 3: SHAP & LIME
+# PAGE 3: SHAP AND LIME
 # ============================================================
 
 elif page == "SHAP & LIME":
@@ -885,10 +849,7 @@ elif page == "SHAP & LIME":
     sources = ["Test Record"]
 
     if f"latest_{disease}" in st.session_state:
-
-        sources.append(
-            "Latest Prediction"
-        )
+        sources.append("Latest Prediction")
 
     source = st.radio(
         "Input Source",
@@ -902,8 +863,7 @@ elif page == "SHAP & LIME":
             "Record Number",
             min_value=1,
             max_value=len(X_test),
-            value=1,
-            step=1
+            value=1
         )
 
         patient = X_test.iloc[
@@ -930,7 +890,8 @@ elif page == "SHAP & LIME":
                 explainers = load_explainers(
                     disease,
                     model_version,
-                    lime_config_version
+                    train_version,
+                    test_version
                 )
 
                 shap_df, lime_df, lime_r2 = (
@@ -938,19 +899,17 @@ elif page == "SHAP & LIME":
                         patient,
                         model,
                         *explainers,
-                        lime_samples=1200
+                        lime_samples=1000
                     )
                 )
 
-                probability = (
-                    model.predict_proba(
-                        patient
-                    )[0, 1]
+                positive_probability = (
+                    model.predict_proba(patient)[0, 1]
                 )
 
                 st.metric(
                     f"{info['positive']} Probability",
-                    f"{probability:.2%}"
+                    f"{positive_probability:.2%}"
                 )
 
                 c1, c2 = st.columns(2)
@@ -958,23 +917,23 @@ elif page == "SHAP & LIME":
                 with c1:
 
                     st.plotly_chart(
-                        explanation_chart(
+                        importance_chart(
                             shap_df,
                             "shap_value",
                             "SHAP"
                         ),
-                        use_container_width=True
+                        width="stretch"
                     )
 
                 with c2:
 
                     st.plotly_chart(
-                        explanation_chart(
+                        importance_chart(
                             lime_df,
                             "lime_weight",
                             "LIME"
                         ),
-                        use_container_width=True
+                        width="stretch"
                     )
 
                 st.metric(
@@ -982,23 +941,11 @@ elif page == "SHAP & LIME":
                     f"{lime_r2:.3f}"
                 )
 
-                # Explanation reliability warning
-
-                if (
-                    not np.isfinite(lime_r2)
-                    or lime_r2 < 0.70
-                ):
-
-                    st.warning(
-                        "LIME has a low local approximation "
-                        "fit for this prediction. Interpret "
-                        "its feature contributions cautiously."
-                    )
-
                 st.caption(
-                    "SHAP and LIME explain model behaviour, "
-                    "not clinical causation. Their contribution "
-                    "values may use different scales."
+                    "Contributions describe model behaviour, "
+                    "not clinical causation. "
+                    "SHAP units depend on the selected model; "
+                    "LIME uses a local surrogate."
                 )
 
             except Exception as exc:
@@ -1013,15 +960,15 @@ elif page == "SHAP & LIME":
 elif page == "XAI Reliability":
 
     evaluation_path = (
-        paths["report"]
-        / "xai_final_v3.csv"
+        p["report"] / "xai_evaluation.csv"
     )
 
     if not evaluation_path.exists():
 
         st.warning(
-            "Run python final_validation.py "
-            "to generate XAI reliability results."
+            "XAI results not found. Run: "
+            f"python run_all_diseases.py "
+            f"--only {disease} --skip-training"
         )
 
         st.stop()
@@ -1030,182 +977,79 @@ elif page == "XAI Reliability":
         evaluation_path
     )
 
-    # --------------------------------------------------------
-    # EXPLANATION AGREEMENT
-    # --------------------------------------------------------
-
-    st.subheader("Explanation Agreement")
+    st.subheader("Reliability Summary")
 
     c1, c2, c3 = st.columns(3)
 
     c1.metric(
-        "Top-5 Agreement",
-        f"{evaluation['top5_agreement'].mean():.3f}"
+        "SHAP-LIME Consistency",
+        f"{evaluation['top_k_jaccard'].mean():.3f}"
     )
 
     c2.metric(
-        "Top-10 Agreement",
-        f"{evaluation['top10_agreement'].mean():.3f}"
+        "SHAP Stability",
+        f"{evaluation['shap_stability'].mean():.3f}"
     )
 
     c3.metric(
-        "LIME Seed Stability",
-        f"{evaluation['lime_seed_stability'].mean():.3f}"
+        "LIME Stability",
+        f"{evaluation['lime_stability'].mean():.3f}"
     )
 
-    # --------------------------------------------------------
-    # INPUT STABILITY
-    # --------------------------------------------------------
+    st.subheader("Fidelity and Local Fit")
 
-    st.subheader("Input Perturbation Stability")
-
-    stability_metrics = [
-        (
-            "SHAP Stability (5%)",
-            "shap_stability_5pct"
-        ),
-        (
-            "LIME Stability (5%)",
-            "lime_stability_5pct"
-        ),
-        (
-            "SHAP Stability (15%)",
-            "shap_stability_15pct"
-        ),
-        (
-            "LIME Stability (15%)",
-            "lime_stability_15pct"
-        )
-    ]
-
-    columns = st.columns(4)
-
-    for column, (title, key) in zip(
-        columns,
-        stability_metrics
-    ):
-
-        value = evaluation[key].mean()
-
-        column.metric(
-            title,
-            f"{value:.3f}"
-            if pd.notna(value)
-            else "N/A"
-        )
-
-    st.caption(
-        "Perturbation percentages describe interpolation "
-        "strengths, not changes in clinical risk."
-    )
-
-    # --------------------------------------------------------
-    # FEATURE REPLACEMENT
-    # --------------------------------------------------------
-
-    st.subheader("Feature Replacement Analysis")
-
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3 = st.columns(3)
 
     c1.metric(
-        "SHAP Prediction Change",
-        f"{evaluation['shap_ablation_delta'].mean():.3f}"
+        "SHAP Fidelity Ratio",
+        f"{evaluation['shap_fidelity_ratio'].mean():.3f}"
     )
 
     c2.metric(
-        "LIME Prediction Change",
-        f"{evaluation['lime_ablation_delta'].mean():.3f}"
+        "LIME Fidelity Ratio",
+        f"{evaluation['lime_fidelity_ratio'].mean():.3f}"
     )
 
     c3.metric(
-        "Random Feature Change",
-        f"{evaluation['random_ablation_delta'].mean():.3f}"
-    )
-
-    c4.metric(
         "LIME Local R²",
         f"{evaluation['lime_local_r2'].mean():.3f}"
     )
-
-    st.caption(
-        "Feature replacement measures prediction changes, "
-        "not causality. This evaluation is exploratory."
-    )
-
-    # --------------------------------------------------------
-    # RECORD-LEVEL RESULTS
-    # --------------------------------------------------------
 
     st.subheader("Record-Level Evaluation")
 
     st.dataframe(
         evaluation.round(4),
         hide_index=True,
-        use_container_width=True
+        width="stretch"
     )
 
-    # --------------------------------------------------------
-    # FIVE-DISEASE COMPARISON
-    # --------------------------------------------------------
-
     comparison_path = (
-        REPORT_DIR
-        / "xai_final_summary_v3.csv"
+        REPORT_DIR / "xai_comparison.csv"
     )
 
     if comparison_path.exists():
 
-        st.subheader(
-            "Five-Disease XAI Comparison"
-        )
+        st.subheader("Across-Disease Comparison")
 
-        summary = pd.read_csv(
+        comparison = pd.read_csv(
             comparison_path
         )
 
-        columns = [
-            "name",
-            "records_evaluated",
-            "top5_agreement",
-            "shap_stability_15pct",
-            "lime_stability_15pct",
-            "lime_seed_stability",
-            "shap_ablation_delta",
-            "lime_ablation_delta",
-            "lime_local_r2"
-        ]
-
         st.dataframe(
-            summary[columns].round(4),
+            comparison.round(4),
             hide_index=True,
-            use_container_width=True
-        )
-
-        fig = go.Figure(
-            go.Bar(
-                x=summary["name"],
-                y=summary["top5_agreement"],
-                marker_color="#507B9D"
-            )
-        )
-
-        fig.update_layout(
-            title="SHAP-LIME Feature Agreement",
-            xaxis_title="Disease",
-            yaxis_title="Top-5 Jaccard Similarity",
-            yaxis_range=[0, 1],
-            height=400
-        )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
+            width="stretch"
         )
 
     st.caption(
-        "These results are based on an exploratory "
-        "evaluation and do not establish clinical reliability."
+        "These preliminary scores reflect a limited "
+        "number of test records. "
+        "Clinical plausibility requires a separate "
+        "literature-based review."
     )
+
+
+
 
 
 
