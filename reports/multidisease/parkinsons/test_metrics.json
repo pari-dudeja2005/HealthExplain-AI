@@ -1,0 +1,57 @@
+{
+  "disease": "parkinsons",
+  "name": "Parkinson's Disease",
+  "negative_label": "Healthy",
+  "positive_label": "Parkinson's",
+  "best_model": "XGBoost",
+  "selection_metric": "validation_roc_auc",
+  "train_records": 158,
+  "validation_records": 31,
+  "test_records": 37,
+  "feature_count": 22,
+  "numeric_features": [
+    "MDVP:Fo",
+    "MDVP:Fhi",
+    "MDVP:Flo",
+    "MDVP:Jitter",
+    "MDVP:Jitter.1",
+    "MDVP:RAP",
+    "MDVP:PPQ",
+    "Jitter:DDP",
+    "MDVP:Shimmer",
+    "MDVP:Shimmer.1",
+    "Shimmer:APQ3",
+    "Shimmer:APQ5",
+    "MDVP:APQ",
+    "Shimmer:DDA",
+    "NHR",
+    "HNR",
+    "RPDE",
+    "DFA",
+    "spread1",
+    "spread2",
+    "D2",
+    "PPE"
+  ],
+  "categorical_features": [],
+  "test_metrics": {
+    "accuracy": 0.8648648648648649,
+    "precision": 0.8611111111111112,
+    "recall": 1.0,
+    "f1": 0.9253731343283582,
+    "roc_auc": 0.6290322580645161,
+    "pr_auc": 0.8669911615898189
+  },
+  "confusion_matrix": [
+    [
+      1,
+      5
+    ],
+    [
+      0,
+      31
+    ]
+  ],
+  "group_safe_split": true,
+  "threshold": 0.5
+}

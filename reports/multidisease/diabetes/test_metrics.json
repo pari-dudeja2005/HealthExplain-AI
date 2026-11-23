@@ -1,0 +1,43 @@
+{
+  "disease": "diabetes",
+  "name": "Diabetes",
+  "negative_label": "No Diabetes",
+  "positive_label": "Diabetes",
+  "best_model": "Logistic Regression",
+  "selection_metric": "validation_roc_auc",
+  "train_records": 614,
+  "validation_records": 123,
+  "test_records": 154,
+  "feature_count": 8,
+  "numeric_features": [
+    "preg",
+    "plas",
+    "pres",
+    "skin",
+    "insu",
+    "mass",
+    "pedi",
+    "age"
+  ],
+  "categorical_features": [],
+  "test_metrics": {
+    "accuracy": 0.7077922077922078,
+    "precision": 0.6,
+    "recall": 0.5,
+    "f1": 0.5454545454545454,
+    "roc_auc": 0.812962962962963,
+    "pr_auc": 0.673326163579994
+  },
+  "confusion_matrix": [
+    [
+      82,
+      18
+    ],
+    [
+      27,
+      27
+    ]
+  ],
+  "group_safe_split": false,
+  "threshold": 0.5
+}

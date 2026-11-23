@@ -1,0 +1,8 @@
+{
+  "total_records": 400,
+  "unique_feature_rows": 400,
+  "duplicate_feature_rows": 0,
+  "distinct_feature_patterns_shared_between_train_and_test": 0,
+  "test_rows_matching_training_features": 0,
+  "feature_identical_rows_with_conflicting_labels": 0
+}

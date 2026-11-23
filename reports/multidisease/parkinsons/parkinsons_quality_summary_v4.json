@@ -1,0 +1,10 @@
+{
+  "training_subjects": 26,
+  "cv_repeats": 5,
+  "selected_candidate": "Logistic Regression C=0.1 balanced",
+  "meets_improvement_rule": false,
+  "baseline_mean_subject_auc": 0.7067669172932332,
+  "candidate_mean_subject_auc": 0.7157894736842105,
+  "note": "Exploratory model selection using the original training partition only. Independent patient-level validation is still needed.",
+  "applied": false
+}

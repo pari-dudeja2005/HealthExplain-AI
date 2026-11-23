@@ -1,0 +1,23 @@
+{
+  "breast_cancer": {
+    "kernel_scale": 0.75,
+    "training_mean_local_r2": 0.8018342589274,
+    "training_seed_stability": 0.7248677248677248,
+    "training_records": 6,
+    "note": "Tuned on training examples only; external fidelity not established"
+  },
+  "kidney_disease": {
+    "kernel_scale": 0.75,
+    "training_mean_local_r2": 0.6061455927239746,
+    "training_seed_stability": 0.7962962962962963,
+    "training_records": 6,
+    "note": "Tuned on training examples only; external fidelity not established"
+  },
+  "parkinsons": {
+    "kernel_scale": 0.75,
+    "training_mean_local_r2": 0.4444753862822343,
+    "training_seed_stability": 0.7830687830687829,
+    "training_records": 6,
+    "note": "Tuned on training examples only; external fidelity not established"
+  }
+}

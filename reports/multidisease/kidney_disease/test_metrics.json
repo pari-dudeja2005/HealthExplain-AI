@@ -1,0 +1,60 @@
+{
+  "disease": "kidney_disease",
+  "name": "Chronic Kidney Disease",
+  "negative_label": "No CKD",
+  "positive_label": "CKD",
+  "best_model": "Logistic Regression",
+  "selection_metric": "validation_roc_auc",
+  "train_records": 320,
+  "validation_records": 64,
+  "test_records": 80,
+  "feature_count": 24,
+  "numeric_features": [
+    "age",
+    "bp",
+    "sg",
+    "al",
+    "su",
+    "bgr",
+    "bu",
+    "sc",
+    "sod",
+    "pot",
+    "hemo",
+    "pcv",
+    "wbcc",
+    "rbcc"
+  ],
+  "categorical_features": [
+    "rbc",
+    "pc",
+    "pcc",
+    "ba",
+    "htn",
+    "dm",
+    "cad",
+    "appet",
+    "pe",
+    "ane"
+  ],
+  "test_metrics": {
+    "accuracy": 0.9875,
+    "precision": 1.0,
+    "recall": 0.98,
+    "f1": 0.98989898989899,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0
+  },
+  "confusion_matrix": [
+    [
+      30,
+      0
+    ],
+    [
+      1,
+      49
+    ]
+  ],
+  "group_safe_split": false,
+  "threshold": 0.5
+}

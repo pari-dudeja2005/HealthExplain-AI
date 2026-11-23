@@ -1,0 +1,48 @@
+{
+  "disease": "heart_disease",
+  "name": "Heart Disease",
+  "negative_label": "No Heart Disease",
+  "positive_label": "Heart Disease",
+  "best_model": "Logistic Regression",
+  "selection_metric": "validation_roc_auc",
+  "train_records": 242,
+  "validation_records": 49,
+  "test_records": 61,
+  "feature_count": 13,
+  "numeric_features": [
+    "age",
+    "sex",
+    "cp",
+    "trestbps",
+    "chol",
+    "fbs",
+    "restecg",
+    "thalach",
+    "exang",
+    "oldpeak",
+    "slope",
+    "ca",
+    "thal"
+  ],
+  "categorical_features": [],
+  "test_metrics": {
+    "accuracy": 0.8688524590163934,
+    "precision": 0.8125,
+    "recall": 0.9285714285714286,
+    "f1": 0.8666666666666667,
+    "roc_auc": 0.9512987012987013,
+    "pr_auc": 0.9233707417020479
+  },
+  "confusion_matrix": [
+    [
+      27,
+      6
+    ],
+    [
+      2,
+      26
+    ]
+  ],
+  "group_safe_split": false,
+  "threshold": 0.5
+}

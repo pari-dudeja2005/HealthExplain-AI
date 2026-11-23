@@ -1,0 +1,21 @@
+{
+  "diseases": [
+    "breast_cancer",
+    "diabetes",
+    "heart_disease",
+    "kidney_disease",
+    "parkinsons"
+  ],
+  "per_class": 4,
+  "lime_seeds": 3,
+  "perturbations_per_strength": 2,
+  "lime_samples": 700,
+  "background_donors": 25,
+  "neighbor_interpolation_fractions": [
+    0.05,
+    0.15
+  ],
+  "cv_repeats": 3,
+  "cv_partition": "original training set only; held-out test excluded",
+  "note": "Exploratory evaluation; no clinical validity claims"
+}

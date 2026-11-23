@@ -1,0 +1,35 @@
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# macOS
+.DS_Store
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+*.pem
+*.key
+
+# Editor settings
+.vscode/
+.idea/
+
+# Temporary files
+*.log
+*.tmp
+.ipynb_checkpoints/
+
+# Local backups
+*_before_v4.joblib
+*_before_v4.json

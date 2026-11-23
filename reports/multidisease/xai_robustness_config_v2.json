@@ -1,0 +1,14 @@
+{
+  "per_class": 4,
+  "seeds": 3,
+  "perturbations": 2,
+  "lime_samples": 700,
+  "random_comparisons": 20,
+  "diseases": [
+    "breast_cancer",
+    "diabetes",
+    "heart_disease",
+    "kidney_disease",
+    "parkinsons"
+  ]
+}
